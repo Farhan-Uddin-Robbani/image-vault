@@ -1,0 +1,26 @@
+{
+  "name": "image-vault",
+  "version": "1.0.0",
+  "description": "Local-first desktop app for browsing, viewing, and tagging images",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').cpSync('src/renderer','dist/renderer',{recursive:true,filter:(f)=>!/\\.ts$/.test(f)})\"",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && electron .",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "electron": "^43.0.0",
+    "exifr": "^7.1.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^26.1.0",
+    "@electron/rebuild": "^3.7.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
+  <title>Image Vault</title>
+  <link rel="stylesheet" href="styles/theme.css">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <div id="titlebar">
+      <span class="titlebar-title">Image Vault</span>
+      <div class="titlebar-actions">
+        <button id="btn-theme" title="Toggle theme">🌓</button>
+      </div>
+    </div>
+    <div id="toolbar">
+      <button id="btn-open-folder" title="Open folder">📂 Open Folder</button>
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search filenames, tags, descriptions...">
+        <button id="btn-search" title="Search">🔍</button>
+      </div>
+      <button id="btn-advanced-search" title="Advanced search">⚙️</button>
+      <div class="toolbar-spacer"></div>
+      <button id="btn-slideshow" title="Slideshow">▶️</button>
+      <button id="btn-fullscreen" title="Fullscreen">⛶</button>
+    </div>
+    <div id="main-content">
+      <div id="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-header">Folders</div>
+          <div id="folder-list" class="sidebar-list"></div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">Tags</div>
+          <div id="tag-tree" class="sidebar-list"></div>
+          <div class="sidebar-actions">
+            <button id="btn-add-tag" title="Add tag">+ Add Tag</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">Collections</div>
+          <div id="collection-list" class="sidebar-list"></div>
+          <div class="sidebar-actions">
+            <button id="btn-add-collection" title="Add collection">+ New</button>
+          </div>
+        </div>
+      </div>
+      <div id="thumbpanel">
+        <div id="thumb-toolbar">
+          <span id="image-count">No images</span>
+          <div class="thumb-actions">
+            <button id="btn-thumb-sm" title="Small thumbnails">⊞</button>
+            <button id="btn-thumb-md" title="Medium thumbnails" class="active">⊟</button>
+            <button id="btn-thumb-lg" title="Large thumbnails">⊡</button>
+            <button id="btn-sort-name" title="Sort by name" class="active">A-Z</button>
+            <button id="btn-sort-date" title="Sort by date">📅</button>
+          </div>
+        </div>
+        <div id="thumbnail-grid"></div>
+      </div>
+      <div id="preview-panel">
+        <div id="preview-container">
+          <div id="preview-placeholder">Select an image to preview</div>
+          <img id="preview-image" style="display:none" alt="Preview">
+        </div>
+        <div id="preview-info">
+          <div id="preview-filename" class="info-row filename"></div>
+          <div id="tag-bar" class="info-row">
+            <div id="tag-list"></div>
+            <input type="text" id="tag-input" placeholder="Add tag...">
+          </div>
+          <div id="preview-exif" class="info-section"></div>
+          <div id="preview-actions" class="info-row">
+            <div class="rating-stars" id="rating-stars">
+              <span data-rating="1">☆</span><span data-rating="2">☆</span><span data-rating="3">☆</span><span data-rating="4">☆</span><span data-rating="5">☆</span>
+            </div>
+            <button id="btn-flag" title="Flag">🚩</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="advanced-search-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span>Advanced Search</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Text</label>
+            <input type="text" id="as-text" placeholder="Search in filename, tags, description">
+          </div>
+          <div class="form-row">
+            <label>Min Rating</label>
+            <select id="as-rating">
+              <option value="0">Any</option>
+              <option value="1">1★</option>
+              <option value="2">2★</option>
+              <option value="3">3★</option>
+              <option value="4">4★</option>
+              <option value="5">5★</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Date From</label>
+            <input type="date" id="as-date-from">
+          </div>
+          <div class="form-row">
+            <label>Date To</label>
+            <input type="date" id="as-date-to">
+          </div>
+          <div class="form-row">
+            <label>Camera</label>
+            <input type="text" id="as-camera" placeholder="Camera model">
+          </div>
+          <div class="form-actions">
+            <button id="as-search" class="btn-primary">Search</button>
+            <button id="as-clear">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tag-modal" class="modal" style="display:none">
+      <div class="modal-content small">
+        <div class="modal-header">
+          <span>New Tag</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Name</label>
+            <input type="text" id="tag-name" placeholder="e.g. nature/landscape">
+          </div>
+          <div class="form-row">
+            <label>Color</label>
+            <input type="color" id="tag-color" value="#4a9eff">
+          </div>
+          <div class="form-actions">
+            <button id="tag-save" class="btn-primary">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="collection-modal" class="modal" style="display:none">
+      <div class="modal-content small">
+        <div class="modal-header">
+          <span>New Collection</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Name</label>
+            <input type="text" id="collection-name" placeholder="Collection name">
+          </div>
+          <div class="form-actions">
+            <button id="collection-save" class="btn-primary">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

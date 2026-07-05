@@ -1,0 +1,27 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('vault', {
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
+  scanFolder: (folderPath: string) => ipcRenderer.invoke('scan-folder', folderPath),
+  listImages: (folder: string) => ipcRenderer.invoke('list-images', folder),
+  getImage: (id: number) => ipcRenderer.invoke('get-image', id),
+  readImageFile: (filePath: string) => ipcRenderer.invoke('read-image-file', filePath),
+  thumbnailFile: (filePath: string) => ipcRenderer.invoke('thumbnail-file', filePath),
+  getTags: () => ipcRenderer.invoke('get-tags'),
+  createTag: (name: string, parentId: number | null, color: string) => ipcRenderer.invoke('create-tag', name, parentId, color),
+  deleteTag: (tagId: number) => ipcRenderer.invoke('delete-tag', tagId),
+  getImageTags: (imageId: number) => ipcRenderer.invoke('get-image-tags', imageId),
+  addImageTag: (imageId: number, tagId: number) => ipcRenderer.invoke('add-image-tag', imageId, tagId),
+  removeImageTag: (imageId: number, tagId: number) => ipcRenderer.invoke('remove-image-tag', imageId, tagId),
+  searchImages: (query: string) => ipcRenderer.invoke('search-images', query),
+  advancedSearch: (filters: any) => ipcRenderer.invoke('advanced-search', filters),
+  updateImageMetadata: (id: number, metadata: any) => ipcRenderer.invoke('update-image-metadata', id, metadata),
+  extractExif: (filePath: string) => ipcRenderer.invoke('extract-exif', filePath),
+  listFolders: () => ipcRenderer.invoke('list-folders'),
+  getTheme: () => ipcRenderer.invoke('get-theme'),
+  collectionsList: () => ipcRenderer.invoke('collections-list'),
+  collectionCreate: (name: string, description: string) => ipcRenderer.invoke('collection-create', name, description),
+  collectionAddImages: (collectionId: number, imageIds: number[]) => ipcRenderer.invoke('collection-add-images', collectionId, imageIds),
+  collectionImages: (collectionId: number) => ipcRenderer.invoke('collection-images', collectionId),
+  savedSearchesList: () => ipcRenderer.invoke('saved-searches-list'),
+});

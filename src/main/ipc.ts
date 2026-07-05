@@ -9,60 +9,99 @@ const IMAGE_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.bmp', '.tiff', '.tif',
 ]);
 
+function walkDir(dir: string): string[] {
+  const results: string[] = [];
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        results.push(...walkDir(fullPath));
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (IMAGE_EXTENSIONS.has(ext)) {
+          results.push(fullPath);
+        }
+      }
+    }
+  } catch { }
+  return results;
+}
+
 export function registerIpcHandlers(): void {
   const db = getDb();
   if (!db) return;
 
-  ipcMain.handle('select-folder', async () => {
-    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
-    if (result.canceled || result.filePaths.length === 0) return null;
-    return result.filePaths[0];
+  // ─── Vault management ──────────────────────────────────
+  ipcMain.handle('list-vaults', async () => {
+    return db.prepare('SELECT * FROM vaults ORDER BY name').all();
   });
 
-  ipcMain.handle('scan-folder', async (_event, folderPath: string) => {
+  ipcMain.handle('add-vault', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Select image folder to add as vault',
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+
+    const vaultPath = result.filePaths[0];
+    const vaultName = path.basename(vaultPath);
+
+    try {
+      const existing = db.prepare('SELECT id FROM vaults WHERE path = ?').get(vaultPath) as any;
+      if (existing) return { id: existing.id, name: vaultName, path: vaultPath };
+
+      const ins = db.prepare('INSERT INTO vaults (name, path) VALUES (?, ?)').run(vaultName, vaultPath);
+      return { id: ins.lastInsertRowid, name: vaultName, path: vaultPath };
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('remove-vault', async (_event, vaultId: number) => {
+    const vault = db.prepare('SELECT path FROM vaults WHERE id = ?').get(vaultId) as any;
+    if (!vault) return { error: 'Vault not found' };
+
+    db.transaction(() => {
+      const folderPrefix = vault.path.replace(/\\/g, '\\\\');
+      db.prepare(`DELETE FROM image_tags WHERE image_id IN (SELECT id FROM images WHERE folder LIKE ?)`).run(`${folderPrefix}%`);
+      db.prepare(`DELETE FROM images WHERE folder LIKE ?`).run(`${folderPrefix}%`);
+      db.prepare('DELETE FROM vaults WHERE id = ?').run(vaultId);
+    })();
+
+    return { success: true };
+  });
+
+  ipcMain.handle('scan-vault', async (_event, vaultPath: string) => {
     try {
       const stmt = db.prepare(`INSERT OR IGNORE INTO images (path, filename, folder, extension, file_size, date_modified)
         VALUES (?, ?, ?, ?, ?, ?)`);
-      const insertMany = db.transaction((files: Array<{ path: string; filename: string; folder: string; ext: string; size: number; mtime: string }>) => {
-        for (const f of files) {
-          stmt.run(f.path, f.filename, f.folder, f.ext, f.size, f.mtime);
+
+      const files = walkDir(vaultPath);
+      const insertMany = db.transaction(() => {
+        for (const filePath of files) {
+          try {
+            const stat = fs.statSync(filePath);
+            const folder = path.dirname(filePath);
+            stmt.run(filePath, path.basename(filePath), folder, path.extname(filePath).toLowerCase(), stat.size, stat.mtime.toISOString());
+          } catch { }
         }
       });
 
-      const files: Array<{ path: string; filename: string; folder: string; ext: string; size: number; mtime: string }> = [];
-      const entries = fs.readdirSync(folderPath, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (entry.isFile()) {
-          const ext = path.extname(entry.name).toLowerCase();
-          if (IMAGE_EXTENSIONS.has(ext)) {
-            const fullPath = path.join(folderPath, entry.name);
-            try {
-              const stat = fs.statSync(fullPath);
-              files.push({
-                path: fullPath,
-                filename: entry.name,
-                folder: folderPath,
-                ext,
-                size: stat.size,
-                mtime: stat.mtime.toISOString(),
-              });
-            } catch { }
-          }
-        }
-      }
-
-      insertMany(files);
-
+      insertMany();
       return { count: files.length };
     } catch (err: any) {
       return { error: err.message };
     }
   });
 
-  ipcMain.handle('list-images', async (_event, folder: string) => {
-    const rows = db.prepare('SELECT * FROM images WHERE folder = ? ORDER BY filename').all(folder);
-    return rows;
+  ipcMain.handle('list-images-by-folder', async (_event, folder: string) => {
+    return db.prepare('SELECT * FROM images WHERE folder = ? ORDER BY filename').all(folder);
+  });
+
+  ipcMain.handle('list-vault-folders', async (_event, vaultPath: string) => {
+    const prefix = vaultPath.replace(/\\/g, '\\\\');
+    return db.prepare('SELECT DISTINCT folder FROM images WHERE folder LIKE ? ORDER BY folder').all(`${prefix}%`);
   });
 
   ipcMain.handle('get-image', async (_event, id: number) => {
@@ -228,10 +267,6 @@ export function registerIpcHandlers(): void {
     } catch (err: any) {
       return { error: err.message };
     }
-  });
-
-  ipcMain.handle('list-folders', async () => {
-    return db.prepare('SELECT DISTINCT folder FROM images ORDER BY folder').all();
   });
 
   ipcMain.handle('get-theme', async () => {

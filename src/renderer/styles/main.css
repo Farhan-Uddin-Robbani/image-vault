@@ -601,3 +601,77 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Vault */
+.vault-indicator {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.vault-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.vault-list-item:hover {
+  background: var(--bg-hover);
+}
+
+.vault-list-item.active {
+  background: var(--bg-active);
+  border-color: var(--accent);
+}
+
+.vault-list-item .vault-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.vault-list-item .vault-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.vault-list-item .vault-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.vault-list-item .vault-actions button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.vault-list-item .vault-actions button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.vault-list-item .vault-actions .vault-scan-btn {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.sidebar-item.muted {
+  color: var(--text-muted);
+  font-style: italic;
+  cursor: default;
+}
+
+.sidebar-item.muted:hover {
+  background: transparent;
+}

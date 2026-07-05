@@ -93,7 +93,33 @@ export function initDatabase(): void {
     CREATE INDEX IF NOT EXISTS idx_images_flag ON images(flag);
     CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
     CREATE INDEX IF NOT EXISTS idx_tags_parent ON tags(parent_id);
+
+    CREATE TABLE IF NOT EXISTS vaults (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      path TEXT UNIQUE NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER PRIMARY KEY
+    );
   `);
+
+  const row = db.prepare('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1').get() as { version: number } | undefined;
+  const version = row ? row.version : 0;
+
+  if (version < 1) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS vaults (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        path TEXT UNIQUE NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+    db.prepare('INSERT OR REPLACE INTO schema_version (version) VALUES (1)').run();
+  }
 }
 
 export function getDb(): Database.Database | null {

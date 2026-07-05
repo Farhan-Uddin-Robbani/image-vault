@@ -13,11 +13,12 @@
     <div id="titlebar">
       <span class="titlebar-title">Image Vault</span>
       <div class="titlebar-actions">
+        <span id="vault-indicator" class="vault-indicator"></span>
         <button id="btn-theme" title="Toggle theme">🌓</button>
       </div>
     </div>
     <div id="toolbar">
-      <button id="btn-open-folder" title="Open folder">📂 Open Folder</button>
+      <button id="btn-manage-vaults" title="Manage image vaults">🗄️ Manage Vaults</button>
       <div class="search-container">
         <input type="text" id="search-input" placeholder="Search filenames, tags, descriptions...">
         <button id="btn-search" title="Search">🔍</button>
@@ -31,7 +32,9 @@
       <div id="sidebar">
         <div class="sidebar-section">
           <div class="sidebar-header">Folders</div>
-          <div id="folder-list" class="sidebar-list"></div>
+          <div id="folder-list" class="sidebar-list">
+            <div class="sidebar-item muted">Add a vault to get started</div>
+          </div>
         </div>
         <div class="sidebar-section">
           <div class="sidebar-header">Tags</div>
@@ -82,6 +85,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Vault Manager Modal -->
+    <div id="vault-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span>Manage Vaults</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="vault-list"></div>
+          <div class="form-actions" style="justify-content:flex-start">
+            <button id="vault-add" class="btn-primary">+ Add Vault</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Search Modal -->
     <div id="advanced-search-modal" class="modal" style="display:none">
       <div class="modal-content">
         <div class="modal-header">

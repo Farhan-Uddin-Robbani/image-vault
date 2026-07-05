@@ -1,6 +1,8 @@
-// ─── State ───────────────────────────────────────────────
 interface AppState {
-  currentFolder: string | null;
+  vaults: any[];
+  activeVault: any | null;
+  folders: string[];
+  activeFolder: string | null;
   images: any[];
   selectedImageId: number | null;
   currentImage: any | null;
@@ -16,7 +18,10 @@ interface AppState {
 }
 
 const state: AppState = {
-  currentFolder: null,
+  vaults: [],
+  activeVault: null,
+  folders: [],
+  activeFolder: null,
   images: [],
   selectedImageId: null,
   currentImage: null,
@@ -31,7 +36,6 @@ const state: AppState = {
   panY: 0,
 };
 
-// ─── DOM refs ────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
 const folderList = $('folder-list')!;
 const tagTree = $('tag-tree')!;
@@ -45,14 +49,15 @@ const tagInput = $('tag-input') as HTMLInputElement;
 const previewExif = $('preview-exif')!;
 const imageCount = $('image-count')!;
 const searchInput = $('search-input') as HTMLInputElement;
+const vaultIndicator = $('vault-indicator')!;
 
-// ─── Init ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     state.theme = (await window.vault.getTheme()) as 'dark' | 'light';
     document.documentElement.setAttribute('data-theme', state.theme);
     await loadTags();
     await loadCollections();
+    await loadVaults();
     bindEvents();
   } catch (e: any) {
     showError('Failed to initialize: ' + e.message);
@@ -67,9 +72,8 @@ function showError(msg: string): void {
   setTimeout(() => el.remove(), 5000);
 }
 
-// ─── Events ──────────────────────────────────────────────
 function bindEvents(): void {
-  $('btn-open-folder')!.onclick = openFolder;
+  $('btn-manage-vaults')!.onclick = openVaultManager;
   $('btn-search')!.onclick = doSearch;
   searchInput.onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
   $('btn-advanced-search')!.onclick = () => showModal('advanced-search-modal');
@@ -97,61 +101,170 @@ function bindEvents(): void {
   $('as-search')!.onclick = doAdvancedSearch;
   $('as-clear')!.onclick = clearAdvancedSearch;
   $('rating-stars')!.onclick = handleRating;
+  $('vault-add')!.onclick = addVault;
 
   document.addEventListener('keydown', handleKeyboard);
 }
 
-// ─── Folder ──────────────────────────────────────────────
-async function openFolder(): Promise<void> {
-  try {
-    const folder = await window.vault.selectFolder();
-    if (!folder) return;
-
-    const result = await window.vault.scanFolder(folder);
-    if (result.error) {
-      showError(result.error);
-      return;
-    }
-
-    state.currentFolder = folder;
-    state.currentView = 'grid';
-    await loadFolderImages(folder);
-    await loadFolders();
-  } catch (e: any) {
-    showError('Error opening folder: ' + e.message);
+// ─── Vault Management ────────────────────────────────────
+async function loadVaults(): Promise<void> {
+  state.vaults = await window.vault.listVaults();
+  if (state.vaults.length > 0 && !state.activeVault) {
+    state.activeVault = state.vaults[0];
+    await selectVault(state.activeVault);
+  } else if (state.vaults.length === 0) {
+    vaultIndicator.textContent = '';
+    folderList.innerHTML = `<div class="sidebar-item muted">Add a vault to get started</div>`;
+    imageCount.textContent = 'No vaults';
+    thumbnailGrid.innerHTML = '';
   }
 }
 
-async function loadFolderImages(folder: string): Promise<void> {
-  const images = await window.vault.listImages(folder);
-  state.images = images;
+async function openVaultManager(): Promise<void> {
+  const vaults = await window.vault.listVaults();
+  const list = $('vault-list')!;
+  list.innerHTML = vaults.map((v: any) =>
+    `<div class="vault-list-item${state.activeVault && state.activeVault.id === v.id ? ' active' : ''}" data-vault-id="${v.id}">
+      <div>
+        <div class="vault-name">📁 ${v.name}</div>
+        <div class="vault-path">${v.path}</div>
+      </div>
+      <div class="vault-actions">
+        <button class="vault-scan-btn" data-vault-id="${v.id}" data-path="${v.path}">Scan</button>
+        <button class="vault-remove-btn" data-vault-id="${v.id}">Remove</button>
+      </div>
+    </div>`
+  ).join('');
+
+  list.querySelectorAll('.vault-list-item').forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'BUTTON') return;
+      const id = Number((el as HTMLElement).dataset.vaultId);
+      const vault = vaults.find((v: any) => v.id === id);
+      if (vault) {
+        closeModals();
+        await selectVault(vault);
+      }
+    });
+  });
+
+  list.querySelectorAll('.vault-scan-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const vaultPath = (btn as HTMLElement).dataset.path!;
+      showError('Scanning vault...');
+      const result = await window.vault.scanVault(vaultPath);
+      if (result.error) {
+        showError(result.error);
+      } else {
+        showError(`Scanned ${result.count} images`);
+        const vault = state.vaults.find((v: any) => v.path === vaultPath);
+        if (vault) await selectVault(vault);
+      }
+    });
+  });
+
+  list.querySelectorAll('.vault-remove-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = Number((btn as HTMLElement).dataset.vaultId);
+      if (confirm('Remove this vault and all its images from the database?')) {
+        await window.vault.removeVault(id);
+        await loadVaults();
+        await openVaultManager();
+      }
+    });
+  });
+
+  showModal('vault-modal');
+}
+
+async function addVault(): Promise<void> {
+  const result = await window.vault.addVault();
+  if (!result) return;
+  if (result.error) {
+    showError(result.error);
+    return;
+  }
+  showError('Scanning new vault...');
+  const scanResult = await window.vault.scanVault(result.path);
+  if (scanResult.error) {
+    showError(scanResult.error);
+  } else {
+    showError(`Added "${result.name}" — ${scanResult.count} images found`);
+  }
+  await loadVaults();
+  const vault = state.vaults.find((v: any) => v.id === result.id);
+  if (vault) await selectVault(vault);
+  closeModals();
+}
+
+async function selectVault(vault: any): Promise<void> {
+  state.activeVault = vault;
+  state.activeFolder = null;
+  state.currentView = 'grid';
+  vaultIndicator.textContent = `📁 ${vault.name}`;
+
+  const folders = await window.vault.listVaultFolders(vault.path);
+  state.folders = folders.map((f: any) => f.folder);
+  renderFolderTree();
+  await loadImagesForFolder(null);
+}
+
+function renderFolderTree(): void {
+  if (!state.activeVault) return;
+
+  const allItem = document.createElement('div');
+  allItem.className = `sidebar-item${!state.activeFolder ? ' active' : ''}`;
+  allItem.textContent = '📂 All Images';
+  allItem.onclick = () => loadImagesForFolder(null);
+
+  folderList.innerHTML = '';
+  folderList.appendChild(allItem);
+
+  for (const folder of state.folders) {
+    const relative = folder.replace(state.activeVault.path, '') || '/';
+    const item = document.createElement('div');
+    item.className = `sidebar-item${state.activeFolder === folder ? ' active' : ''}`;
+    item.textContent = `📁 ${relative}`;
+    item.onclick = () => loadImagesForFolder(folder);
+    folderList.appendChild(item);
+  }
+}
+
+async function loadImagesForFolder(folder: string | null): Promise<void> {
+  state.activeFolder = folder;
+  state.currentView = 'grid';
+  folderList.querySelectorAll('.sidebar-item').forEach((el) => {
+    el.classList.remove('active');
+    if ((folder === null && el.textContent === '📂 All Images') ||
+        (folder !== null && (el as HTMLElement).textContent === `📁 ${folder.replace(state.activeVault!.path, '') || '/'}`)) {
+      el.classList.add('active');
+    }
+  });
+
+  if (folder === null) {
+    const allImages: any[] = [];
+    for (const f of state.folders) {
+      const imgs = await window.vault.listImagesByFolder(f);
+      allImages.push(...imgs);
+    }
+    state.images = allImages;
+  } else {
+    state.images = await window.vault.listImagesByFolder(folder);
+  }
+
   sortImages();
   renderThumbnails();
 }
 
-async function loadFolders(): Promise<void> {
-  const folders = await window.vault.listFolders() as any[];
-  folderList.innerHTML = folders.map((f: any) =>
-    `<div class="sidebar-item${f.folder === state.currentFolder ? ' active' : ''}" data-folder="${f.folder}">📁 ${f.folder}</div>`
-  ).join('');
-
-  folderList.querySelectorAll('.sidebar-item').forEach((el) => {
-    el.addEventListener('click', () => {
-      const folder = (el as HTMLElement).dataset.folder!;
-      state.currentFolder = folder;
-      state.currentView = 'grid';
-      loadFolderImages(folder);
-      folderList.querySelectorAll('.sidebar-item').forEach((e) => e.classList.remove('active'));
-      el.classList.add('active');
-    });
-  });
-}
-
 // ─── Thumbnails ──────────────────────────────────────────
 function renderThumbnails(): void {
-  imageCount.textContent = `${state.images.length} images`;
+  imageCount.textContent = state.activeVault
+    ? `${state.images.length} images`
+    : 'No vault selected';
   thumbnailGrid.innerHTML = '';
-
   thumbnailGrid.className = `thumb-${state.thumbSize}`;
 
   for (const img of state.images) {
@@ -186,7 +299,6 @@ function renderThumbnails(): void {
     div.ondblclick = () => openFullscreen(img);
 
     thumbnailGrid.appendChild(div);
-
     loadThumbnail(img.path, imgEl);
   }
 }

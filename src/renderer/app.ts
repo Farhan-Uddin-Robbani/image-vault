@@ -81,12 +81,24 @@ const searchInput = $('search-input') as HTMLInputElement;
 
 // ─── Init ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  state.theme = (await window.vault.getTheme()) as 'dark' | 'light';
-  document.documentElement.setAttribute('data-theme', state.theme);
-  await loadTags();
-  await loadCollections();
-  bindEvents();
+  try {
+    state.theme = (await window.vault.getTheme()) as 'dark' | 'light';
+    document.documentElement.setAttribute('data-theme', state.theme);
+    await loadTags();
+    await loadCollections();
+    bindEvents();
+  } catch (e: any) {
+    showError('Failed to initialize: ' + e.message);
+  }
 });
+
+function showError(msg: string): void {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:12px;right:12px;background:#f44747;color:#fff;padding:8px 16px;border-radius:4px;z-index:999;font-size:13px;max-width:400px';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
 
 // ─── Events ──────────────────────────────────────────────
 function bindEvents(): void {
@@ -117,26 +129,30 @@ function bindEvents(): void {
   $('collection-save')!.onclick = createCollectionFromModal;
   $('as-search')!.onclick = doAdvancedSearch;
   $('as-clear')!.onclick = clearAdvancedSearch;
-  $('#rating-stars')!.onclick = handleRating;
+  $('rating-stars')!.onclick = handleRating;
 
   document.addEventListener('keydown', handleKeyboard);
 }
 
 // ─── Folder ──────────────────────────────────────────────
 async function openFolder(): Promise<void> {
-  const folder = await window.vault.selectFolder();
-  if (!folder) return;
+  try {
+    const folder = await window.vault.selectFolder();
+    if (!folder) return;
 
-  const result = await window.vault.scanFolder(folder);
-  if (result.error) {
-    console.error(result.error);
-    return;
+    const result = await window.vault.scanFolder(folder);
+    if (result.error) {
+      showError(result.error);
+      return;
+    }
+
+    state.currentFolder = folder;
+    state.currentView = 'grid';
+    await loadFolderImages(folder);
+    await loadFolders();
+  } catch (e: any) {
+    showError('Error opening folder: ' + e.message);
   }
-
-  state.currentFolder = folder;
-  state.currentView = 'grid';
-  await loadFolderImages(folder);
-  await loadFolders();
 }
 
 async function loadFolderImages(folder: string): Promise<void> {

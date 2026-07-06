@@ -126,7 +126,7 @@ body {
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   user-select: none;
   transition: margin-left 0.2s ease, opacity 0.15s ease;
 }
@@ -191,9 +191,35 @@ body {
   letter-spacing: 0.5px;
 }
 
-.sidebar-list {
-  max-height: 200px;
+.sidebar-scroll {
+  flex: 1;
   overflow-y: auto;
+}
+
+.folder-tree {
+  padding: 2px 0;
+}
+
+#sidebar-left-bottom {
+  border-top: 1px solid var(--border-color);
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+#sidebar-left-bottom button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+#sidebar-left-bottom button:hover {
+  background: var(--bg-hover);
 }
 
 .sidebar-item {
@@ -216,6 +242,80 @@ body {
 .sidebar-item.active {
   background: var(--bg-active);
   color: #ffffff;
+}
+
+/* ── Folder Tree ─────────────────────────── */
+.tree-node {
+  padding: 0;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  padding-left: calc(8px + var(--depth, 0) * 16px);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.tree-row:hover {
+  background: var(--bg-hover);
+}
+
+.tree-row.active {
+  background: var(--bg-active);
+  color: #ffffff;
+}
+
+.tree-row.all-images {
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 5px;
+}
+
+.tree-arrow {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tree-arrow-spacer {
+  cursor: default;
+}
+
+.tree-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  width: 18px;
+  text-align: center;
+}
+
+.tree-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  padding-left: 6px;
+}
+
+.tree-row.active .tree-count {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tree-children {
+  padding: 0;
 }
 
 .sidebar-actions {

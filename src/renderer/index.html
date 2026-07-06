@@ -26,18 +26,22 @@
     <div id="main-content">
       <div id="sidebar-left">
         <div id="sidebar-left-toolbar">
-          <button id="btn-manage-vaults" title="Manage image vaults">🗄️ Manage Vaults</button>
           <div class="search-container">
             <input type="text" id="search-input" placeholder="Search filenames, tags, descriptions...">
             <button id="btn-search" title="Search">🔍</button>
           </div>
           <button id="btn-advanced-search" title="Advanced search">⚙️ Advanced</button>
         </div>
-        <div class="sidebar-section">
-          <div class="sidebar-header">Folders</div>
-          <div id="folder-list" class="sidebar-list">
-            <div class="sidebar-item muted">Add a vault to get started</div>
+        <div class="sidebar-scroll">
+          <div class="sidebar-section">
+            <div class="sidebar-header">Folders</div>
+            <div id="folder-list" class="folder-tree">
+              <div class="sidebar-item muted">Add a vault to get started</div>
+            </div>
           </div>
+        </div>
+        <div id="sidebar-left-bottom">
+          <button id="btn-manage-vaults" title="Manage image vaults">🗄️ Manage Vaults</button>
         </div>
       </div>
       <div id="thumbpanel">

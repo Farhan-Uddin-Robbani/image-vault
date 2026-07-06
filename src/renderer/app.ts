@@ -1,3 +1,11 @@
+interface FolderNode {
+  name: string;
+  relativePath: string;
+  fullPath: string;
+  count: number;
+  children: FolderNode[];
+}
+
 interface AppState {
   vaults: any[];
   activeVault: any | null;
@@ -17,6 +25,8 @@ interface AppState {
   panY: number;
   leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
+  folderCounts: Record<string, number>;
+  expandedPaths: Set<string>;
 }
 
 const state: AppState = {
@@ -38,6 +48,8 @@ const state: AppState = {
   panY: 0,
   leftSidebarOpen: true,
   rightSidebarOpen: true,
+  folderCounts: {},
+  expandedPaths: new Set(),
 };
 
 const $ = (id: string) => document.getElementById(id);
@@ -225,41 +237,151 @@ async function selectVault(vault: any): Promise<void> {
 
   const folders = await window.vault.listVaultFolders(vault.path);
   state.folders = folders.map((f: any) => f.folder);
+  state.folderCounts = {};
+  for (const f of folders) {
+    state.folderCounts[f.folder] = f.image_count;
+  }
+  state.expandedPaths = new Set();
   renderFolderTree();
   await loadImagesForFolder(null);
+}
+
+function buildFolderTree(): FolderNode[] {
+  const root: FolderNode[] = [];
+  const vaultPath = state.activeVault!.path;
+
+  for (const folderPath of state.folders) {
+    const relative = folderPath.replace(vaultPath, '').replace(/^[/\\]/, '');
+    const parts = relative.split(/[/\\]/);
+    const count = state.folderCounts[folderPath] || 0;
+
+    let currentLevel = root;
+    let currentRelative = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      currentRelative = currentRelative ? `${currentRelative}/${part}` : part;
+
+      let node = currentLevel.find(n => n.name === part);
+      if (!node) {
+        node = { name: part, relativePath: currentRelative, fullPath: '', count: 0, children: [] };
+        currentLevel.push(node);
+        currentLevel.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      if (i === parts.length - 1) {
+        node.fullPath = folderPath;
+        node.count = count;
+      }
+
+      currentLevel = node.children;
+    }
+  }
+
+  function sumChildren(nodes: FolderNode[]): void {
+    for (const node of nodes) {
+      if (node.children.length > 0) {
+        sumChildren(node.children);
+        const childSum = node.children.reduce((s, c) => s + c.count, 0);
+        node.count += childSum;
+      }
+    }
+  }
+  sumChildren(root);
+
+  return root;
+}
+
+function renderTreeNodes(nodes: FolderNode[], container: HTMLElement, depth: number): void {
+  for (const node of nodes) {
+    const nodeDiv = document.createElement('div');
+    nodeDiv.className = 'tree-node';
+    nodeDiv.style.setProperty('--depth', String(depth));
+
+    const row = document.createElement('div');
+    row.className = `tree-row${node.fullPath && state.activeFolder === node.fullPath ? ' active' : ''}`;
+
+    if (node.children.length > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'tree-arrow';
+      arrow.textContent = state.expandedPaths.has(node.relativePath) ? '▼' : '▶';
+      arrow.onclick = (e) => { e.stopPropagation(); toggleExpand(node.relativePath); };
+      row.appendChild(arrow);
+    } else {
+      const spacer = document.createElement('span');
+      spacer.className = 'tree-arrow tree-arrow-spacer';
+      row.appendChild(spacer);
+    }
+
+    const icon = document.createElement('span');
+    icon.className = 'tree-icon';
+    icon.textContent = node.children.length > 0 ? '📂' : '📁';
+    row.appendChild(icon);
+
+    const label = document.createElement('span');
+    label.className = 'tree-label';
+    label.textContent = node.name;
+    row.appendChild(label);
+
+    const countSpan = document.createElement('span');
+    countSpan.className = 'tree-count';
+    countSpan.textContent = `(${node.count})`;
+    row.appendChild(countSpan);
+
+    if (node.fullPath) {
+      row.onclick = () => loadImagesForFolder(node.fullPath);
+      row.setAttribute('data-path', node.fullPath);
+    } else {
+      row.onclick = () => toggleExpand(node.relativePath);
+    }
+
+    nodeDiv.appendChild(row);
+
+    if (node.children.length > 0) {
+      const childrenDiv = document.createElement('div');
+      childrenDiv.className = 'tree-children';
+      if (!state.expandedPaths.has(node.relativePath)) {
+        childrenDiv.style.display = 'none';
+      }
+      renderTreeNodes(node.children, childrenDiv, depth + 1);
+      nodeDiv.appendChild(childrenDiv);
+    }
+
+    container.appendChild(nodeDiv);
+  }
+}
+
+function toggleExpand(relativePath: string): void {
+  if (state.expandedPaths.has(relativePath)) {
+    state.expandedPaths.delete(relativePath);
+  } else {
+    state.expandedPaths.add(relativePath);
+  }
+  renderFolderTree();
 }
 
 function renderFolderTree(): void {
   if (!state.activeVault) return;
 
-  const allItem = document.createElement('div');
-  allItem.className = `sidebar-item${!state.activeFolder ? ' active' : ''}`;
-  allItem.textContent = '📂 All Images';
-  allItem.onclick = () => loadImagesForFolder(null);
-
   folderList.innerHTML = '';
-  folderList.appendChild(allItem);
 
-  for (const folder of state.folders) {
-    const relative = folder.replace(state.activeVault.path, '') || '/';
-    const item = document.createElement('div');
-    item.className = `sidebar-item${state.activeFolder === folder ? ' active' : ''}`;
-    item.textContent = `📁 ${relative}`;
-    item.onclick = () => loadImagesForFolder(folder);
-    folderList.appendChild(item);
-  }
+  const total = Object.values(state.folderCounts).reduce((a, b) => a + b, 0);
+
+  const allRow = document.createElement('div');
+  allRow.className = `tree-row all-images${!state.activeFolder ? ' active' : ''}`;
+  allRow.innerHTML = `<span class="tree-icon">📂</span><span class="tree-label">All Images</span><span class="tree-count">(${total})</span>`;
+  allRow.onclick = () => loadImagesForFolder(null);
+  allRow.setAttribute('data-path', '');
+  folderList.appendChild(allRow);
+
+  const tree = buildFolderTree();
+  renderTreeNodes(tree, folderList, 0);
 }
 
 async function loadImagesForFolder(folder: string | null): Promise<void> {
   state.activeFolder = folder;
   state.currentView = 'grid';
-  folderList.querySelectorAll('.sidebar-item').forEach((el) => {
-    el.classList.remove('active');
-    if ((folder === null && el.textContent === '📂 All Images') ||
-        (folder !== null && (el as HTMLElement).textContent === `📁 ${folder.replace(state.activeVault!.path, '') || '/'}`)) {
-      el.classList.add('active');
-    }
-  });
+  renderFolderTree();
 
   if (folder === null) {
     const allImages: any[] = [];

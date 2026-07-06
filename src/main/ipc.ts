@@ -101,7 +101,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('list-vault-folders', async (_event, vaultPath: string) => {
     const prefix = vaultPath.replace(/\\/g, '\\\\');
-    return db.prepare('SELECT DISTINCT folder FROM images WHERE folder LIKE ? ORDER BY folder').all(`${prefix}%`);
+    return db.prepare('SELECT folder, COUNT(*) as image_count FROM images WHERE folder LIKE ? GROUP BY folder ORDER BY folder').all(`${prefix}%`);
   });
 
   ipcMain.handle('get-image', async (_event, id: number) => {

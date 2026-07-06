@@ -83,6 +83,16 @@ function bindEvents(): void {
   $('btn-fullscreen')!.onclick = toggleFullscreen;
   $('btn-slideshow')!.onclick = startSlideshow;
 
+  $('btn-minimize')!.onclick = () => window.vault.minimizeWindow();
+  $('btn-maximize')!.onclick = () => window.vault.maximizeWindow();
+  $('btn-close')!.onclick = () => window.vault.closeWindow();
+
+  window.vault.onMaximized((maximized) => {
+    const btn = $('btn-maximize')!;
+    btn.textContent = maximized ? '❐' : '□';
+    btn.title = maximized ? 'Restore' : 'Maximize';
+  });
+
   $('btn-thumb-sm')!.onclick = () => setThumbSize('sm');
   $('btn-thumb-md')!.onclick = () => setThumbSize('md');
   $('btn-thumb-lg')!.onclick = () => setThumbSize('lg');

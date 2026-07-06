@@ -24,6 +24,13 @@ interface VaultAPI {
   collectionImages: (collectionId: number) => Promise<any[]>;
   savedSearchesList: () => Promise<any[]>;
   getTheme: () => Promise<string>;
+
+  // Window controls
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
+  isMaximized: () => Promise<boolean>;
+  onMaximized: (callback: (maximized: boolean) => void) => void;
 }
 
 interface Window {

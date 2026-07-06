@@ -37,4 +37,13 @@ contextBridge.exposeInMainWorld('vault', {
 
   // Theme
   getTheme: () => ipcRenderer.invoke('get-theme'),
+
+  // Window controls
+  minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window-maximize'),
+  closeWindow: () => ipcRenderer.invoke('window-close'),
+  isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  onMaximized: (callback: (maximized: boolean) => void) => {
+    ipcRenderer.on('window-maximized', (_event: Electron.IpcRendererEvent, maximized: boolean) => callback(maximized));
+  },
 });

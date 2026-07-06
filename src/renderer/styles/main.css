@@ -39,8 +39,39 @@ body {
 
 .titlebar-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
   -webkit-app-region: no-drag;
+}
+
+.window-controls {
+  display: flex;
+  margin-right: -12px;
+  height: 36px;
+}
+
+.win-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 14px;
+  line-height: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.win-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.win-btn-close:hover {
+  background: #e81123;
+  color: #ffffff;
 }
 
 #toolbar {

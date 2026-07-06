@@ -11,10 +11,11 @@
 <body>
   <div id="app">
     <div id="titlebar">
-      <span class="titlebar-title">Image Vault</span>
-      <div class="titlebar-actions">
-        <span id="vault-indicator" class="vault-indicator"></span>
-        <button id="btn-theme" title="Toggle theme">🌓</button>
+      <button id="btn-toggle-left" class="titlebar-btn" title="Toggle left sidebar">☰</button>
+      <span id="vault-indicator" class="vault-indicator"></span>
+      <div class="titlebar-right">
+        <button id="btn-toggle-right" class="titlebar-btn" title="Toggle preview panel">☰</button>
+        <button id="btn-theme" class="titlebar-btn" title="Toggle theme">🌓</button>
         <div class="window-controls">
           <button id="btn-minimize" class="win-btn" title="Minimize">─</button>
           <button id="btn-maximize" class="win-btn" title="Maximize">□</button>
@@ -22,37 +23,20 @@
         </div>
       </div>
     </div>
-    <div id="toolbar">
-      <button id="btn-manage-vaults" title="Manage image vaults">🗄️ Manage Vaults</button>
-      <div class="search-container">
-        <input type="text" id="search-input" placeholder="Search filenames, tags, descriptions...">
-        <button id="btn-search" title="Search">🔍</button>
-      </div>
-      <button id="btn-advanced-search" title="Advanced search">⚙️</button>
-      <div class="toolbar-spacer"></div>
-      <button id="btn-slideshow" title="Slideshow">▶️</button>
-      <button id="btn-fullscreen" title="Fullscreen">⛶</button>
-    </div>
     <div id="main-content">
-      <div id="sidebar">
+      <div id="sidebar-left">
+        <div id="sidebar-left-toolbar">
+          <button id="btn-manage-vaults" title="Manage image vaults">🗄️ Manage Vaults</button>
+          <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search filenames, tags, descriptions...">
+            <button id="btn-search" title="Search">🔍</button>
+          </div>
+          <button id="btn-advanced-search" title="Advanced search">⚙️ Advanced</button>
+        </div>
         <div class="sidebar-section">
           <div class="sidebar-header">Folders</div>
           <div id="folder-list" class="sidebar-list">
             <div class="sidebar-item muted">Add a vault to get started</div>
-          </div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-header">Tags</div>
-          <div id="tag-tree" class="sidebar-list"></div>
-          <div class="sidebar-actions">
-            <button id="btn-add-tag" title="Add tag">+ Add Tag</button>
-          </div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-header">Collections</div>
-          <div id="collection-list" class="sidebar-list"></div>
-          <div class="sidebar-actions">
-            <button id="btn-add-collection" title="Add collection">+ New</button>
           </div>
         </div>
       </div>
@@ -66,10 +50,14 @@
             <button id="btn-sort-name" title="Sort by name" class="active">A-Z</button>
             <button id="btn-sort-date" title="Sort by date">📅</button>
           </div>
+          <div class="thumb-actions">
+            <button id="btn-slideshow" title="Slideshow">▶️</button>
+            <button id="btn-fullscreen" title="Fullscreen">⛶</button>
+          </div>
         </div>
         <div id="thumbnail-grid"></div>
       </div>
-      <div id="preview-panel">
+      <div id="sidebar-right">
         <div id="preview-container">
           <div id="preview-placeholder">Select an image to preview</div>
           <img id="preview-image" style="display:none" alt="Preview">
@@ -86,6 +74,20 @@
               <span data-rating="1">☆</span><span data-rating="2">☆</span><span data-rating="3">☆</span><span data-rating="4">☆</span><span data-rating="5">☆</span>
             </div>
             <button id="btn-flag" title="Flag">🚩</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">Tags</div>
+          <div id="tag-tree" class="sidebar-list"></div>
+          <div class="sidebar-actions">
+            <button id="btn-add-tag" title="Add tag">+ Add Tag</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">Collections</div>
+          <div id="collection-list" class="sidebar-list"></div>
+          <div class="sidebar-actions">
+            <button id="btn-add-collection" title="Add collection">+ New</button>
           </div>
         </div>
       </div>

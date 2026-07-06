@@ -15,6 +15,8 @@ interface AppState {
   zoomLevel: number;
   panX: number;
   panY: number;
+  leftSidebarOpen: boolean;
+  rightSidebarOpen: boolean;
 }
 
 const state: AppState = {
@@ -34,6 +36,8 @@ const state: AppState = {
   zoomLevel: 1,
   panX: 0,
   panY: 0,
+  leftSidebarOpen: true,
+  rightSidebarOpen: true,
 };
 
 const $ = (id: string) => document.getElementById(id);
@@ -82,6 +86,9 @@ function bindEvents(): void {
   $('btn-add-collection')!.onclick = () => showModal('collection-modal');
   $('btn-fullscreen')!.onclick = toggleFullscreen;
   $('btn-slideshow')!.onclick = startSlideshow;
+
+  $('btn-toggle-left')!.onclick = toggleLeftSidebar;
+  $('btn-toggle-right')!.onclick = toggleRightSidebar;
 
   $('btn-minimize')!.onclick = () => window.vault.minimizeWindow();
   $('btn-maximize')!.onclick = () => window.vault.maximizeWindow();
@@ -586,6 +593,17 @@ function updateRatingUI(rating: number): void {
     (el as HTMLElement).textContent = r <= rating ? '★' : '☆';
     el.classList.toggle('active', r <= rating);
   });
+}
+
+// ─── Sidebar Toggles ────────────────────────────────────
+function toggleLeftSidebar(): void {
+  state.leftSidebarOpen = !state.leftSidebarOpen;
+  $('sidebar-left')!.classList.toggle('collapsed', !state.leftSidebarOpen);
+}
+
+function toggleRightSidebar(): void {
+  state.rightSidebarOpen = !state.rightSidebarOpen;
+  $('sidebar-right')!.classList.toggle('collapsed', !state.rightSidebarOpen);
 }
 
 // ─── Theme ───────────────────────────────────────────────
